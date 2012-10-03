@@ -1,0 +1,21 @@
+string_filter_types:
+  detag:
+    method: regexp
+    pattern: "<[^>]*>"
+    replace: ""
+string_filter_rules:
+  - key: message
+    type: detag
+    suffix: -dettaged
+num_filter_types: {}
+num_filter_rules: []
+string_types: {}
+string_rules:
+  - key: message-dettaged
+    type: space
+    sample_weight: tf
+    global_weight: idf
+num_types: {}
+num_rules:
+  - key: "*"
+    type: num

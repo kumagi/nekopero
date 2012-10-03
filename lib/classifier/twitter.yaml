@@ -1,0 +1,19 @@
+string_filter_types: {}
+string_filter_rules: []
+num_filter_types: {}
+num_filter_rules: []
+string_types:
+  mecab:
+    method: dynamic
+    path: /usr/local/lib/libmecab_splitter.so
+    function: create
+    arg: ""
+string_rules:
+  - key: "*"
+    type: mecab
+    sample_weight: tf
+    global_weight: idf
+num_types: {}
+num_rules:
+  - key: "*"
+    type: num
