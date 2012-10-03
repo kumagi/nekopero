@@ -1,4 +1,4 @@
-require "./nekopero/version"
+require "../lib/nekopero/version"
 
 require "json"
 

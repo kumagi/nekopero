@@ -18,7 +18,8 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+$ nekopero classifier <command> <arg1> <arg2> <arg3>...
+$ nekopero recommender <command> <arg1> <arg2> <arg3>...
 
 ## Contributing
 

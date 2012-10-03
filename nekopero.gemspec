@@ -9,7 +9,7 @@ Gem::Specification.new do |gem|
   gem.authors       = ["KUMAZAKI Hiroki"]
   gem.email         = ["hiroki.kumazaki@gmail.com"]
   gem.description   = %q{Jubatus terminal client}
-  gem.summary       = %q{You can use Jubatus through terminal for testing}
+  gem.summary       = %q{You can use Jubatus through terminal with naive query}
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($/)
