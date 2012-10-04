@@ -1,5 +1,3 @@
-require "../lib/nekopero/version"
-
 require "json"
 
 module Nekopero
