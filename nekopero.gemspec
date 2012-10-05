@@ -10,12 +10,11 @@ Gem::Specification.new do |gem|
   gem.email         = ["hiroki.kumazaki@gmail.com"]
   gem.description   = %q{Jubatus terminal client}
   gem.summary       = %q{You can use Jubatus through terminal with naive query}
-  gem.homepage      = ""
+  gem.homepage      = "http://github.com/kumagi/nekopero"
 
   gem.files         = `git ls-files`.split($/)
-  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
-  gem.executables = `git ls-files -- bin/*`
+  gem.executables   = `git ls-files -- bin/*`.split("\n").map{|f| File.basename(f)}
   gem.require_paths = ["lib"]
   gem.add_dependency 'jubatus', '>= 0.1.0'
 end
