@@ -1,33 +1,28 @@
-require "ap"
-require './utils'
+require(File.dirname(__FILE__) + '/utils')
 
 def jubaclassifier host, port, argv
   require "jubatus/classifier/client"
   cli = Jubatus::Client::Classifier.new host,port
+
+  exit if common_method(cli, argv)
+  
   case argv[0]
   when "set_config"
-    classifier_algorighms = ["perceptron", "PA1", "PA2", "PA3", "CW", "AROW", "NHERD"]
-    if not classifier_algorighms.include?(argv[1])
-      puts "invalid classifier algorithm '#{argv[1]}', you can select from [#{classifier_algorighms.join ", "}]"
+    selectable_algorighms = ["perceptron", "PA1", "PA2", "CW", "AROW", "NHERD"]
+    if not selectable_algorighms.include?(argv[1])
+      puts "invalid classifier algorithm '#{argv[1]}', you can select from [#{selectable_algorighms.join ", "}]"
+      puts "Did you mean #{get_candidate_command(argv[1], selectable_algorighms).join(" or ")}?" unless argv[1].nil?
       exit
     end
 
     method = argv[1]
     config = argv[2] || "space"
-    require "yaml"
-    setting = nil
-    begin
-      setting = YAML.load_file "classifier/#{config}.yaml"
-    rescue Errno::ENOENT => e
-      puts "file classifier/#{config}.yaml not found"
-      puts "You can specify setting within\n#{setting_file_candidate("classifier").join("\n")}"
-      exit
-    end
 
-    cfg = Jubatus::Config_data.new method, setting.to_json
+    cfg = Jubatus::Config_data.new method, load_setting("classifier", config).to_json
 
     begin
-      result = cli.set_config("hoge",cfg)
+      puts "setting method:#{method}\nconfig_name:#{config}"
+      result = cli.set_config("a",cfg)
     rescue MessagePack::RPC::RuntimeError => e
       puts JSON.pretty_generate(setting)
       raise e
@@ -37,10 +32,6 @@ def jubaclassifier host, port, argv
     else
       puts "set_config: success."
     end
-  when "get_config"
-    setting = cli.get_config "a"
-    puts "method: #{setting.method}"
-    puts "converter: #{JSON.pretty_generate(JSON.parse setting.config)}"
   when "train"
     label = argv[1]
     value = argv[2..-1].join(' ')
@@ -50,17 +41,19 @@ def jubaclassifier host, port, argv
       puts "success."
     end
   when "classify"
-    raise "classify argument must be set" if argv[1..-1].empty?
+    expected "classify argument must be set" if argv[1..-1].empty?
     value = argv[1..-1].join(' ')
     result = cli.classify("a", [Jubatus::Datum.new([["message", value]],[])])
     puts "classify #{value} => "
-    ap result
-  when "get_status"
-    ap cli.get_status("a")
+    puts "#{value} => #{result[0].sort{|l,r| r[1]<=>l[1]}}"
   else
-    puts "unknown method #{ARGV[1]}, you must specify method within #{(cli.methods - Object.methods.to_a).map{|n|n.to_s}}"
+    candidates = (cli.methods - Object.methods.to_a).map{|n|n.to_s}
+    puts "unknown method #{ARGV[1]}" unless ARGV[1].nil?
+    puts "expected: nekopero classifier <method> [<options>].."
+    puts "You can specify method within #{candidates.join ", "}"
+    puts "Did you mean #{get_candidate_command(ARGV[1], candidates).join(" or ")}?" unless ARGV[1].nil?
   end
 rescue => e
-  ap e
-  ap e.backtrace
+  p e
+  p e.backtrace
 end
