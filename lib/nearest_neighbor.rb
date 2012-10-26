@@ -10,14 +10,14 @@ def convert_datum array
   Jubatus::Datum.new([],items)
 end
 
-def jubarecommender host, port, argv
-  require "jubatus/recommender/client"
-  cli = Jubatus::Client::Recommender.new host,port
+def jubanearest_neighbor host, port, argv
+  require "jubatus/nearest_neighbor/client"
+  cli = Jubatus::Client::Nearest_Neighbor.new host,port
   case argv[0]
   when "set_config"
-    selectable_algorighms = ["inverted_index", "minhash", "lsh"]
+    selectable_algorighms = ["euclid_lsh", "minhash", "lsh"]
     if not selectable_algorighms.include?(argv[1])
-      puts "invalid recommender algorithm '#{argv[1]}', you can select from [#{selectable_algorighms.join ", "}]"
+      puts "invalid nearest_neighbor algorithm '#{argv[1]}', you can select from [#{selectable_algorighms.join ", "}]"
       exit
     end
 
@@ -26,10 +26,10 @@ def jubarecommender host, port, argv
     require "yaml"
     setting = nil
     begin
-      setting = YAML.load_file "recommender/#{config}.yaml"
+      setting = YAML.load_file "nearest_neighbor/#{config}.yaml"
     rescue Errno::ENOENT => e
-      puts "file recommender/#{config}.yaml not found"
-      puts "You can specify setting within\n#{setting_file_candidate("recommender").join("\n")}"
+      puts "file nearest_neighbor/#{config}.yaml not found"
+      puts "You can specify setting within\n#{setting_file_candidate("nearest_neighbor").join("\n")}"
       exit
     end
 

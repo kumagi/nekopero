@@ -1,5 +1,6 @@
 require "ap"
-require './utils'
+$LOAD_PATH << File.dirname(__FILE__)
+require 'utils'
 
 def jubaclassifier host, port, argv
   require "jubatus/classifier/client"
@@ -17,7 +18,7 @@ def jubaclassifier host, port, argv
     require "yaml"
     setting = nil
     begin
-      setting = YAML.load_file "classifier/#{config}.yaml"
+      setting = YAML.load_file "../lib/classifier/#{config}.yaml"
     rescue Errno::ENOENT => e
       puts "file classifier/#{config}.yaml not found"
       puts "You can specify setting within\n#{setting_file_candidate("classifier").join("\n")}"

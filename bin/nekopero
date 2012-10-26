@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 # -*- encoding: utf-8 -*-
+
+$LOAD_PATH << File.dirname(__FILE__)
+p File.dirname(__FILE__)
+
 require "json"
 module Nekopero
   # TODO: set by argument
@@ -10,8 +14,11 @@ module Nekopero
     require "../lib/classifier"
     jubaclassifier host, port, ARGV[1..-1]
   when "recommender", "rec"
-    require "./recommender"
+    require File.dirname(__FILE__) + "/../lib/recommender"
     jubarecommender host, port, ARGV[1..-1]
+  when "nearest_neighbor", "nn"
+    require File.dirname(__FILE__) + "/../lib/nearest_neighbor"
+    jubanearest_neighbor host, port, ARGV[1..-1]
   when "regression", "reg"
     require "jubatus/regresion/client"
   when "stat", "s"
