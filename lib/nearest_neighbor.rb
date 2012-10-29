@@ -12,7 +12,7 @@ end
 
 def jubanearest_neighbor host, port, argv
   require "jubatus/nearest_neighbor/client"
-  cli = Jubatus::Client::Nearest_Neighbor.new host,port
+  cli = Jubatus::Client::Nearest_neighbor.new host,port
   case argv[0]
   when "set_config"
     selectable_algorighms = ["euclid_lsh", "minhash", "lsh"]
@@ -21,12 +21,12 @@ def jubanearest_neighbor host, port, argv
       exit
     end
 
-    method = argv[1]
+    method = {"nearest_neighbor:name" => argv[1]}
     config = argv[2] || "num"
     require "yaml"
     setting = nil
     begin
-      setting = YAML.load_file "nearest_neighbor/#{config}.yaml"
+      setting = YAML.load_file File.dirname(__FILE__) + "/nearest_neighbor/#{config}.yaml"
     rescue Errno::ENOENT => e
       puts "file nearest_neighbor/#{config}.yaml not found"
       puts "You can specify setting within\n#{setting_file_candidate("nearest_neighbor").join("\n")}"
@@ -53,27 +53,29 @@ def jubanearest_neighbor host, port, argv
     puts "method: #{setting.method}"
     puts "converter: #{JSON.pretty_generate(JSON.parse setting.converter)}"
 
-  when "update_row"
+  when "set_row"
     user = argv[1]
     items = convert_datum argv[2..-1]
     puts "update #{user} => #{items.to_tuple[1]}"
-    result = cli.update_row "a", user, items
+    result = cli.set_row "a", user, items
     if result
       puts "failed"
     else
       puts "success."
     end
 
-  when "complete_row_from_id"
+  when "neighbor_row_from_id"
     raise "id argument must be set" if argv[1..-1].empty?
-    id = argv[1]
-    result = cli.complete_row_from_id "a",id
+    size = argv[1] || 1
+    id = argv[2]
+    result = cli.neighbor_row_from_id "a",id, size.to_i
     puts "#{result.num_values}"
-  when "complete_row_from_data"
+  when "neighbor_row_from_data"
     raise "datum argument must be set" if argv[1..-1].empty?
-    items = convert_datum argv[1..-1]
+    size = argv[1] || 1
+    items = convert_datum argv[2..-1]
     puts "items near #{items.num_values.sort{|l,r| r[1] <=> l[1]}}"
-    result = cli.complete_row_from_data "a", items
+    result = cli.neighbor_row_from_data "a", items, size.to_i
     puts "result: #{result.num_values.sort{|l,r| r[1] <=> l[1] }}"
   when "similar_row_from_id"
     size = argv[1] || 1
@@ -111,7 +113,12 @@ def jubanearest_neighbor host, port, argv
     end
     puts "result:#{result}"
   else
-    puts "unknown method #{ARGV[1]}, you must specify method within #{(cli.methods - Object.methods.to_a).map{|n|n.to_s}}"
+    avalable_methods = (cli.methods - Object.methods.to_a).map{|n| n.to_s}
+    if avalable_methods.include? argv[0]
+      puts "Sorry. [#{argv[0]}] not implemented"
+    else
+      puts "unknown method #{ARGV[1]}, you must specify method within #{avalable_methods}"
+    end
   end
 rescue => e
   p e
