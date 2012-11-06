@@ -16,8 +16,10 @@ def load_setting dirname, config
   end
 end
 
-def expected cmd, wish
+def expected cmd, wish, candidates=[]
   puts cmd+wish
+  puts "select within:\n"+(candidates.map{|c|"  #{c}"}
+                             .join("\n")) unless candidates.empty?
   exit
 end
 
@@ -25,8 +27,8 @@ def unknown_command_message cli, command, modname
   candidates = (cli.methods - Object.methods.to_a).map{|n|n.to_s}
   puts "unknown method #{command}" unless command.nil?
   puts "expected: nekopero #{modname} <method> [<options>].."
-  puts "You can specify method within #{candidates.join ", "}"
-  puts "Did you mean #{get_candidate_command(ARGV[1], candidates).join(" or ")}?" unless command.nil?
+  puts "You can specify method within:\n#{candidates.map{ |c| "  #{c}"}.join "\n"}"
+  puts "Did you mean?\n#{get_candidate_command(ARGV[1], candidates.sort).map{ |c| "  #{c}"}.join("\n")}" unless command.nil?
 end
 
 def set_config cli, config
@@ -39,6 +41,14 @@ def set_config cli, config
     raise e
   end
   true
+end
+
+def validate_algorighm algorithm, candidates, name
+  unless candidates.include?(algorithm)
+    puts "invalid #{name} algorithm '#{algorithm}', you can select from [#{candidates.join ", "}]"
+    puts "Did you mean #{get_candidate_command(algorithm, candidates).join(" or ")}?" unless algorithm.nil?
+    exit
+  end
 end
 
 require 'amatch'
