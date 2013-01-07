@@ -1,3 +1,4 @@
+require 'pp'
 require File.dirname(__FILE__) + '/utils'
 
 def convert_datum array
@@ -13,114 +14,62 @@ end
 def jubanearest_neighbor host, port, argv
   require "jubatus/nearest_neighbor/client"
   cli = Jubatus::Client::Nearest_neighbor.new host,port
+
+  exit if common_method(cli, argv)
+
+  command = "nekopero require #{argv[0]} "
+  result = nil
+
   case argv[0]
   when "set_config"
-    selectable_algorighms = ["euclid_lsh", "minhash", "lsh"]
-    if not selectable_algorighms.include?(argv[1])
-      puts "invalid nearest_neighbor algorithm '#{argv[1]}', you can select from [#{selectable_algorighms.join ", "}]"
-      exit
-    end
-
-    method = {"nearest_neighbor:name" => argv[1]}
-    config = argv[2] || "num"
-    require "yaml"
-    setting = nil
-    begin
-      setting = YAML.load_file File.dirname(__FILE__) + "/nearest_neighbor/#{config}.yaml"
-    rescue Errno::ENOENT => e
-      puts "file nearest_neighbor/#{config}.yaml not found"
-      puts "You can specify setting within\n#{setting_file_candidate("nearest_neighbor").join("\n")}"
-      exit
-    end
-
-    cfg = Jubatus::Config_data.new method, setting.to_json
-
-    result = nil
-    begin
-      result = cli.set_config("a",cfg)
-    rescue MessagePack::RPC::RuntimeError => e
-      puts JSON.pretty_generate(setting)
-      raise e
-    end
-    if result
-      puts "set_config: failed."
-    else
-      puts "set_config: success."
-    end
-
-  when "get_config"
-    setting = cli.get_config "a"
-    puts "method: #{setting.method}"
-    puts "converter: #{JSON.pretty_generate(JSON.parse setting.converter)}"
-
+    validate_algorighm argv[1],["euclid_lsh", "minhash", "lsh"], "nearest_neighbor"
+    method = argv[1]
+    config_file = argv[2] || "num"
+    setting = Jubatus::Config_data.new(({"nearest_neighbor:name" => method}),(load_setting("nearest_neighbor", config_file).to_json))
+    puts "setting method:#{method}\nconfig_name:#{config_file}"
+    result = set_config(cli, setting) ? "failed." : "success."
+  when "init_table"
+    result = cli.init_table "a"
   when "set_row"
+    expected(command,"<id> <label> <score>[<label> <score>...]") if argv[1].nil?
     user = argv[1]
     items = convert_datum argv[2..-1]
     puts "update #{user} => #{items.to_tuple[1]}"
     result = cli.set_row "a", user, items
-    if result
-      puts "failed"
-    else
-      puts "success."
-    end
-
   when "neighbor_row_from_id"
-    raise "id argument must be set" if argv[1..-1].empty?
+    expected(command,"<size> <id>") if argv[1..-1].empty?
     size = argv[1] || 1
     id = argv[2]
-    result = cli.neighbor_row_from_id "a",id, size.to_i
-    puts "#{result.num_values}"
+    puts "neighbor_row for id:#{id} size:#{size}"
+    result = cli.neighbor_row_from_id("a", id, size.to_i)
+      .sort{|l,r| r[1] <=> l[1] }
   when "neighbor_row_from_data"
-    raise "datum argument must be set" if argv[1..-1].empty?
+    expected(command, "<size> <label> <score>[<label> <score>...]") if argv[1..-1].empty?
     size = argv[1] || 1
     items = convert_datum argv[2..-1]
     puts "items near #{items.num_values.sort{|l,r| r[1] <=> l[1]}}"
-    result = cli.neighbor_row_from_data "a", items, size.to_i
-    puts "result: #{result.num_values.sort{|l,r| r[1] <=> l[1] }}"
+    result = cli.neighbor_row_from_data("a", items, size.to_i)
+      .sort{|l,r| r[1] <=> l[1] }
   when "similar_row_from_id"
+    expected(command,"<size> <id>") if argv[1..-1].empty?
     size = argv[1] || 1
     id = argv[2]
     puts "similar_row for #{id} size:#{size}"
-    result = cli.similar_row_from_id "a", id, size.to_i
-    puts "result: #{result.sort{|l,r| r[1] <=> l[1]}}"
+    result = cli.similar_row_from_id("a", id, size.to_i)
+      .sort{|l,r| r[1] <=> l[1] }
   when "similar_row_from_data"
     size = argv[1] || 1
     items = convert_datum argv[2..-1]
     puts "get upto #{size} rows which similar to #{items.num_values.sort{|l,r| r[1] <=> l[1]}}"
-    result = cli.similar_row_from_data "a", items, size.to_i
+    returned = cli.similar_row_from_data "a", items, size.to_i
+    result = returned.sort{|l,r| r[1] <=> l[1] }
     puts "#{result.sort{|l,r| r[1] <=> l[1]}}"
-  when "decode_row"
-    raise "classify argument must be set" if argv[1..-1].empty?
-    puts "result:#{cli.decode_row("a",argv[1..-1].join(" "))}"
-  when "get_all_rows"
-    result = cli.get_all_rows "a"
-    puts "result: #{result}"
-  when "get_status"
-    result = cli.get_status("a")
-    puts "result: #{result}"
-  when "save"
-    raise "save name required" if argv[1].nil?
-    result = cli.save "a", argv[1]
-    puts "result: #{result}"
-  when "load"
-    raise "load name required" if argv[1].nil?
-    result = nil
-    begin
-      result = cli.load "a", argv[1]
-    rescue MessagePack::RPC::RuntimeError => e
-      puts "could not load file [#{argv[1]}]"
-      exit
-    end
-    puts "result:#{result}"
   else
-    avalable_methods = (cli.methods - Object.methods.to_a).map{|n| n.to_s}
-    if avalable_methods.include? argv[0]
-      puts "Sorry. [#{argv[0]}] not implemented"
-    else
-      puts "unknown method #{ARGV[1]}, you must specify method within #{avalable_methods}"
-    end
+    unknown_command_message cli, argv[0], "nearest_neighbor"
+    exit
   end
+  puts "#{argv[0]} result :#{result}"
 rescue => e
-  p e
-  p e.backtrace
+  pp e
+  pp e.backtrace
 end
